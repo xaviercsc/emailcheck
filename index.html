@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Outlook Email Draft</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label, textarea, input { display: block; margin-bottom: 10px; width: 100%; }
+        button { padding: 10px; background-color: blue; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Create Email Draft</h2>
+    
+    <label>To (comma-separated emails):</label>
+    <input type="text" id="toEmail" placeholder="Enter recipient emails" required>
+    
+    <label>CC (comma-separated emails, optional):</label>
+    <input type="text" id="ccEmail" placeholder="Enter CC emails (optional)">
+    
+    <label>Subject:</label>
+    <input type="text" id="subject" placeholder="Enter subject" required>
+    
+    <label>Email Content:</label>
+    <textarea id="emailContent" rows="5" placeholder="Enter email content" required></textarea>
+    
+    <label>Signature:</label>
+    <textarea id="signature" rows="2" placeholder="Enter signature"></textarea>
+    
+    <label>Attach Files (optional):</label>
+    <input type="file" id="attachments" multiple>
+    
+    <button onclick="CreateDraft()">Create Draft Email</button>
+    
+    <script>
+        async function CreateDraft() {
+            let subject = document.getElementById("subject").value;
+            let content = document.getElementById("emailContent").value;
+            let apiKey = "Your_API_Key"; // Replace with your OpenAI API key
+            let prompt = `Correct the grammar, spelling, and clarity of the following email subject and content. Return only the corrected text.\n\nSubject: ${subject}\n\n${content}`;
+            
+            let response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4",
+                    messages: [{"role": "system", "content": "You are an AI that corrects grammar, spelling, and clarity of emails."}, {"role": "user", "content": prompt}],
+                    temperature: 0.2
+                })
+            });
+            
+            let data = await response.json();
+            let correctedText = data.choices[0].message.content.split("\n\n");
+            document.getElementById("subject").value = correctedText[0];
+            document.getElementById("emailContent").value = correctedText.slice(1).join("\n\n");
+            
+            openOutlookDraft();
+        }
+
+        function openOutlookDraft() {
+            let to = document.getElementById("toEmail").value;
+            let cc = document.getElementById("ccEmail").value;
+            let subject = document.getElementById("subject").value;
+            let body = document.getElementById("emailContent").value + "\n\n" + document.getElementById("signature").value;            
+            let outlookUrl = `https://outlook.live.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&cc=${encodeURIComponent(cc)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(outlookUrl, "_blank");
+        }
+    </script>
+</body>
+</html>
